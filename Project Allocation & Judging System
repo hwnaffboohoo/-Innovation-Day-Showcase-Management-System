@@ -1,0 +1,122 @@
+:- initialization(main).
+
+% Facts: Project
+% project(ProjectID, Category, Score).
+
+project('P001', 'Fiction', 90).
+project('P002', 'Science', 84).
+project('P003', 'Science', 90).
+project('P004', 'Biography', 91).
+project('P005', 'Cooking', 86).
+project('P006', 'Society', 85).
+project('P007', 'Education', 78).
+project('P008', 'Fiction', 84).
+
+% Facts: Judge
+% judge(JudgeID, Category).
+
+judge('J001', 'Fiction').
+judge('J002', 'Science').
+judge('J003', 'Biography').
+judge('J004', 'Cooking').
+judge('J005', 'Society').
+judge('J006', 'Education').
+
+% Facts: Booth
+% booth(BoothNumber, Category).
+
+booth('B001', 'Fiction').
+booth('B002', 'Science').
+booth('B003', 'Biography').
+booth('B004', 'Cooking').
+booth('B005', 'Society').
+booth('B006', 'Education').
+
+%----------------------------------------------------------------------
+
+% Rules 1: Check the judge qualification
+% For checking the judge qualification on evaluate project based on matching ExpertiseCategory
+
+judgeQualify(JudgeID, ProjectID) :-
+    judge(JudgeID, Category),
+    project(ProjectID, Category, _).
+    
+% Rules 2: Check the project assigned
+% For checking project assigned in specific booth based on categories
+
+projectAssigned(ProjectID, BoothNumber) :-
+    project(ProjectID, Category, _),
+    booth(BoothNumber, Category).
+
+% Rules 3: Conflict Resolution
+% To ensure there is no judge assigned to evaluate if there is conflict or interest
+conflictInterest('J001', 'P001').
+
+judgeAccess(JudgeID, ProjectID) :-
+    judgeQualify(JudgeID, ProjectID),
+    \+ conflictInterest(JudgeID, ProjectID).
+    
+% Rules 4: Award Eligibility
+% To define the predicate rule to identify project (If Innovation Score >85, eligible category accessed)
+
+awardEligibility(ProjectID, InnovationScore) :-
+    project(ProjectID, _, InnovationScore),
+    InnovationScore > 85,
+    projectAssigned(ProjectID, _).
+    
+%----------------------------------------------------------------------
+
+main :-
+    write('-----------------------------------------'),
+    write('\nInnovation Day Showcase Management System'),
+    write('\n-----------------------------------------'),
+    write('\n'),
+    write('\nList of Project:'),
+    nl,
+    show_projects,
+
+    write('\nJudge Qualification:'),
+    nl,
+    judge_qualify,
+
+    write('\nProject Assigned:'),
+    nl,
+    assigned_project,
+
+    write('\nJudge Accessibilty:'),
+    nl,
+    access_judge,
+    
+    write('\nAward Eligibility:'),
+    nl,
+    award_eligible.
+
+show_projects :-
+    project(ProjectID, Category, Score),
+    format('\nProject ID: ~w~nCategories: ~w~nScore: ~w\n', [ProjectID, Category, Score]),
+    fail.
+show_projects.
+
+judge_qualify :-
+    forall(
+        judgeQualify(JudgeID, ProjectID),
+        format('Match Found -> Judge: ~w | Project: ~w~n', [JudgeID, ProjectID])
+    ).
+
+assigned_project :-
+    forall(
+        projectAssigned(ProjectID, BoothNumber),
+        format('Project Assigned -> Project: ~w | Booth Number: ~w~n', [ProjectID, BoothNumber])
+    ).
+
+access_judge :-
+    forall(
+        (judgeQualify(JudgeID, ProjectID), \+ conflictInterest(JudgeID, ProjectID)),
+        format('Judge Access -> Judge: ~w | Project: ~w~n', [JudgeID, ProjectID])
+    ).
+
+award_eligible :-
+    forall(
+        awardEligibility(ProjectID, InnovationScore),
+        format('Best Innovation Award: ~w | Innovation Score: ~w~n', [ProjectID, InnovationScore])
+    ).
