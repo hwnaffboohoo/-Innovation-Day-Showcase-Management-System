@@ -1,77 +1,140 @@
--- ====================================================================
--- PART B: Functional Programming (Haskell) - Score Analytics
--- ====================================================================
 
 module Main where
 
 import Data.List (maximumBy)
 import Data.Ord (comparing)
 
--- 1. Custom Data Type definition for a Project
+-- ============================================================
+-- PART B: FUNCTIONAL PROGRAMMING (HASKELL)
+-- Innovation Day Showcase - Innovation Score Analytics
+-- ============================================================
+
+-- ------------------------------------------------------------
+-- 1. CUSTOM DATA TYPES AND STRUCTURE DESIGN
+-- ------------------------------------------------------------
+
+-- Type aliases improve readability and code organization.
+type ProjectID = String
+type Category = String
+type Score = Double
+
+-- Immutable data structure representing a showcase project.
 data Project = Project
-    { projectId :: String
-    , category  :: String
-    , scores    :: [Double]
+    { projectId :: ProjectID
+    , category  :: Category
+    , scores    :: [Score]
     } deriving (Show, Eq)
 
--- 2. Pure Functions for Data Analytics
 
--- Function 1: Calculate aggregate average score using foldl (Pure Function & Higher-Order Function)
+-- ------------------------------------------------------------
+-- 2. SAMPLE DATASET
+-- ------------------------------------------------------------
+
+-- Each project contains an ID, category and three judge scores.
+
+sampleProjects :: [Project]
+sampleProjects =
+    [ Project "P001" "Fiction"     [88.0, 92.0, 90.0]
+    , Project "P002" "Science"     [81.0, 85.0, 86.0]
+    , Project "P003" "Science"     [94.0, 89.0, 90.0]
+    , Project "P004" "Biography"   [92.0, 90.0, 91.0]
+    , Project "P005" "Cooking"     [85.0, 87.0, 86.0]
+    , Project "P006" "Society"     [84.0, 86.0, 85.0]
+    , Project "P007" "Education"   [75.0, 80.0, 79.0]
+    , Project "P008" "Fiction"     [82.0, 84.0, 86.0]
+    ]
+
+-- ------------------------------------------------------------
+-- 3. PURE FUNCTION: CALCULATE AVERAGE SCORE
+-- ------------------------------------------------------------
+
+-- foldl recursively accumulates the total score.
+-- An empty score list returns 0.0 to prevent division by zero.
+
 avgScore :: Project -> Double
 avgScore p
     | null (scores p) = 0.0
-    | otherwise       = totalScore / count
-  where
-    totalScore = foldl (+) 0.0 (scores p)
-    count      = fromIntegral (length (scores p))
+    | otherwise =
+        let totalScore = foldl (+) 0.0 (scores p)
+            count = fromIntegral (length (scores p))
+        in totalScore / count
 
--- Function 2: Filter projects qualifying for Final Pitching Round (Threshold >= 80)
+-- ------------------------------------------------------------
+-- 4. HIGHER-ORDER FUNCTION: FILTER FINALISTS
+-- ------------------------------------------------------------
+
+-- Only projects with an average score of at least 80
+-- qualify for the Final Pitching Round.
+-- Projects without judge scores are excluded.
+
 filterFinalists :: Double -> [Project] -> [Project]
-filterFinalists threshold = filter (\p -> avgScore p >= threshold)
+filterFinalists threshold =
+    filter (\p -> not (null (scores p))
+               && avgScore p >= threshold)
 
--- Function 3: Find overall winning project with the highest average score
+-- ------------------------------------------------------------
+-- 5. FIND OVERALL WINNING PROJECT
+-- ------------------------------------------------------------
+
+-- maximumBy compares projects based on their average scores.
+-- Maybe Project safely handles an empty project list.
+
 findWinner :: [Project] -> Maybe Project
 findWinner [] = Nothing
-findWinner ps = Just $ maximumBy (comparing avgScore) ps
+findWinner ps =
+    Just (maximumBy (comparing avgScore) ps)
 
+-- ------------------------------------------------------------
+-- 6. RECURSIVE FUNCTION: DISPLAY PROJECT RESULTS
+-- ------------------------------------------------------------
 
--- ====================================================================
--- SAMPLE DATA & TEST EXECUTION
--- ====================================================================
+-- Pattern matching processes the project list recursively.
+-- The function displays each project until the list is empty.
 
--- Sample dataset matching Part A categories
-sampleProjects :: [Project]
-sampleProjects =
-    [ Project "P001" "Fiction"   [88.0, 92.0, 90.0] -- Avg: 90.0
-    , Project "P002" "Science"   [80.0, 85.0, 87.0] -- Avg: 84.0
-    , Project "P003" "Science"   [91.0, 89.0, 90.0] -- Avg: 90.0
-    , Project "P004" "Biography" [92.0, 90.0, 91.0] -- Avg: 91.0 (Winner)
-    , Project "P005" "Cooking"   [85.0, 87.0, 86.0] -- Avg: 86.0
-    , Project "P006" "Society"   [84.0, 86.0, 85.0] -- Avg: 85.0
-    , Project "P007" "Education" [75.0, 80.0, 79.0] -- Avg: 78.0
-    , Project "P008" "Fiction"   [82.0, 85.0, 85.0] -- Avg: 84.0
-    ]
+displayProjects :: [Project] -> IO ()
+displayProjects [] = return ()
+displayProjects (p:ps) = do
+    putStrLn $
+        "Project ID: " ++ projectId p
+        ++ " | Category: " ++ category p
+        ++ " | Average Score: " ++ show (avgScore p)
+    displayProjects ps
 
+-- -----------------------------------------------------------
+-- 7. MAIN PROGRAM EXECUTION
+-- ------------------------------------------------------------
 main :: IO ()
 main = do
-    putStrLn "==============================================="
-    putStrLn "   INNOVATION DAY SHOWCASE - HASKELL ANALYTICS "
-    putStrLn "==============================================="
-    
-    putStrLn "\n--- 1. AGGREGATED AVERAGE SCORES ---"
-    mapM_ (\p -> putStrLn $ "Project ID: " ++ projectId p ++ 
-                            " | Category: " ++ category p ++ 
-                            " | Average Score: " ++ show (avgScore p)) sampleProjects
 
+    putStrLn "=========================================="
+    putStrLn "  INNOVATION DAY SHOWCASE - HASKELL ANALYTICS"
+    putStrLn "=========================================="
+
+    -- Requirement 1: Calculate aggregated average scores.
+    putStrLn "\n--- 1. AGGREGATED AVERAGE SCORES ---"
+    let projectAverages = map avgScore sampleProjects
+    displayProjects sampleProjects
+    -- Requirement 2: Filter qualified finalists.
     putStrLn "\n--- 2. QUALIFIED FOR FINAL PITCHING ROUND (Avg >= 80) ---"
     let finalists = filterFinalists 80.0 sampleProjects
-    mapM_ (\p -> putStrLn $ "Finalist: " ++ projectId p ++ 
-                            " | Category: " ++ category p ++ 
-                            " | Score: " ++ show (avgScore p)) finalists
-
+    displayProjects finalists
+    -- Requirement 3: Identify the overall winning project.
     putStrLn "\n--- 3. OVERALL SHOWCASE WINNER ---"
     case findWinner sampleProjects of
-        Just winner -> putStrLn $ "Winner: " ++ projectId winner ++ 
-                                  " (" ++ category winner ++ ")" ++
-                                  " with Average Score: " ++ show (avgScore winner)
-        Nothing     -> putStrLn "No projects available."
+        Nothing ->
+            putStrLn "No projects available."
+        Just winner ->
+            putStrLn $
+                "Winner: " ++ projectId winner
+                ++ " (" ++ category winner ++ ")"
+                ++ " with Average Score: "
+                ++ show (avgScore winner)
+    -- Display the number of qualified finalists.
+    putStrLn "\n--- 4. SHOWCASE SUMMARY ---"
+    putStrLn $
+        "Total Projects: " ++ show (length sampleProjects)
+    putStrLn $
+        "Qualified Finalists: " ++ show (length finalists)
+    putStrLn $
+        "Project Average Scores: " ++ show projectAverages
+    putStrLn "\nAnalytics completed successfully."
